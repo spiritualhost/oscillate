@@ -26,13 +26,20 @@ while ($true) {
     # Start the application and use the -PassThru parameter to store the process object in a variable
     $app = Start-Process $FileBrowser.FileName -PassThru
 
-    Write-Host "Running program. Press Ctrl+C to stop."
+    Write-Host "Running program with PID ($($app.Id)). Press Ctrl+C to stop."
 
-    # Wait for a specified period of runtime
-    Start-Sleep -Seconds $timeRun
+    # Wait for a specified period of runtime (WaitForExit in ms), wait for runtime or early exit
+    $app.WaitForExit($timeRun * 1000) | Out-Null
 
-    # Close the application window
-    Stop-Process -Id $app.Id
+    # Close the application window forcefully
+    if (-not $app.HasExited) {
+        Get-CimInstance Win32_Process | 
+            Where-Object { $_.ParentProcessId -eq $app.Id -or $_.ProcessId -eq $app.Id } |
+            ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+        $app.WaitForExit(2000) | Out-Null
+    }
+
+    $app.Dispose()
 
     Write-Host "Program waiting for next cycle, please wait or press Ctrl+C to stop."
 

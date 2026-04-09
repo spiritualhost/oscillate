@@ -1,2 +1,2 @@
-$timeRun = 60
-$timeStop = 60
+$timeRun = 15
+$timeStop = 15
